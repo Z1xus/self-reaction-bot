@@ -3,7 +3,8 @@
 Designed specifically to annoy all your friends with constant reactions on messages.
 
 <picture>
-  <source srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=1439&height=621">
+  <source media="(prefers-color-scheme: dark)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=1439&height=621">
+  <source media="(prefers-color-scheme: light)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=1439&height=621">
   <img alt="Demonstration">
 </picture>
 
