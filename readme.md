@@ -4,7 +4,7 @@ Designed specifically to annoy all your friends with constant reactions on messa
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=719&height=310">
-  <source media="(prefers-color-scheme: light)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=719&height=310">
+  <source media="(prefers-color-scheme: light)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1132781143314411640/4.png?width=719&height=310">
   <img alt="Demonstration">
 </picture>
 
