@@ -1,7 +1,7 @@
 import discord
 import random
 import asyncio
-from asyncio import Queue
+from asyncio import Semaphore, Queue
 
 # in case you got rate limited
 use_proxy = False
@@ -17,42 +17,47 @@ reactions = ["🇧", "🇮", "🇹", "🇨", "🇭"]
 min_delay = 1
 max_delay = 5
 
-# change yo user token
+# change your user token
 user_token = "..."
+
+semaphore = Semaphore(5)
 
 if use_proxy:
     client = discord.Client(proxy=proxy)
-    print("using proxy: " + proxy)
+    print(f"Using proxy: {proxy}")
 else:
     client = discord.Client()
 
 message_queue = Queue()
 
-@client.event
-async def on_ready():
-    print(f"Logged in as {client.user}")
-
 async def add_reactions(message):
-    global current_message
-    current_message = message
+    async with semaphore:
+        for reaction in reactions:
+            try:
+                await message.add_reaction(reaction)
+                delay = random.randint(min_delay, max_delay)
+                await asyncio.sleep(delay)
+            except Exception as e:
+                print(f"An error occurred while adding reaction: {e}")
 
-    for reaction in reactions:
-        await message.add_reaction(reaction)
-        delay = random.randint(min_delay, max_delay)
-        await asyncio.sleep(delay)
-
-    while not message_queue.empty():
-        next_message = await message_queue.get()
-        await add_reactions(next_message)
+async def process_messages():
+    while True:
+        message = await message_queue.get()
+        await add_reactions(message)
+        message_queue.task_done()
 
 @client.event
 async def on_message(message):
     if message.channel.id in allowed_ids:
         await message_queue.put(message)
-        if message_queue.qsize() == 1:
-            await add_reactions(message)
+
+@client.event
+async def on_ready():
+    print(f"Logged in as {client.user}")
+    asyncio.create_task(process_messages())
 
 try:
-    client.run(user_token)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(client.start(user_token))
 except Exception as e:
     print(f"An error occurred while running the bot: {e}")
