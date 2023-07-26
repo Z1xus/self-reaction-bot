@@ -37,6 +37,8 @@ async def add_reactions(message):
                 await message.add_reaction(reaction)
                 delay = random.randint(min_delay, max_delay)
                 await asyncio.sleep(delay)
+            except discord.errors.NotFound:
+                print("Message not found. Skipping reaction.")
             except Exception as e:
                 print(f"An error occurred while adding reaction: {e}")
 
