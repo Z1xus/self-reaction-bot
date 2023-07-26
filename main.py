@@ -61,5 +61,7 @@ async def on_ready():
 try:
     loop = asyncio.get_event_loop()
     loop.run_until_complete(client.start(user_token))
+except KeyboardInterrupt:
+    print("\nCtrl+C received, exiting...")
 except Exception as e:
     print(f"An error occurred while running the bot: {e}")
