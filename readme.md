@@ -23,26 +23,26 @@ git clone https://github.com/Z1xus/self-reaction-bot
 ```
 2. Install dependencies
 ```bash
-pip install -r .\requirements.txt
+pip install -r .\requirements.txt -U
 ```
-3. Configure the bot
-```python
+3. Configure your .env
+```Shell
 # in case you got rate limited
-use_proxy = False
-proxy = "http://localhost:8080"
+USE_PROXY=False
+PROXY=http://localhost:8080
 
 # channel ids where the bot listens for messages
-allowed_ids = [1234567890123456789, ...]
+ALLOWED_IDS=1234567890123456789,...
 
 # reactions list in unicode, emoji and escape formats
-reactions = ["🇧", "🇮", "🇹", "🇨", "🇭"]
+REACTIONS=🇧,🇮,🇹,🇨,🇭
 
 # random delay range in seconds
-min_delay = 1
-max_delay = 5
+MIN_DELAY=1
+MAX_DELAY=5
 
-# change yo user token
-user_token = "..."
+# your discord user token, see https://www.androidauthority.com/get-discord-token-3149920/
+USER_TOKEN=
 ```
 4. Run it 
 ```bash
