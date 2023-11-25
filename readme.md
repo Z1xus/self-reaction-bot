@@ -1,6 +1,7 @@
-## A Discord Python Selfbot to put reactions on messages
+## self-reaction-bot
 
-Designed specifically to annoy all your friends with constant reactions on messages.
+A Discord Python Selfbot to put reactions on messages.  
+Designed specifically to annoy all your friends.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=719&height=310">
