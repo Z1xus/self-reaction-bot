@@ -6,20 +6,20 @@ import os
 from dotenv import load_dotenv
 from asyncio import Semaphore, Queue
 
-if os.path.exists('.env'):
+if os.path.exists(".env"):
     load_dotenv()
 else:
-    logging.error('No .env file found.')
+    logging.error("No .env file found.")
 
 # since v1.0.3 configuration was moved to .env
 
-use_proxy = os.getenv('USE_PROXY') == 'True'
-proxy = os.getenv('PROXY')
-allowed_ids = list(map(int, os.getenv('ALLOWED_IDS').split(',')))
-reactions = os.getenv('REACTIONS').split(',')
-min_delay = int(os.getenv('MIN_DELAY'))
-max_delay = int(os.getenv('MAX_DELAY'))
-user_token = os.getenv('USER_TOKEN')
+use_proxy = os.getenv("USE_PROXY") == "True"
+proxy = os.getenv("PROXY")
+allowed_ids = list(map(int, os.getenv("ALLOWED_IDS").split(",")))
+reactions = os.getenv("REACTIONS").split(",")
+min_delay = int(os.getenv("MIN_DELAY"))
+max_delay = int(os.getenv("MAX_DELAY"))
+user_token = os.getenv("USER_TOKEN")
 
 semaphore = Semaphore(5)
 
@@ -30,6 +30,7 @@ else:
     client = discord.Client(chunk_guild_at_startup=False)
 
 message_queue = Queue()
+
 
 async def add_reactions(message):
     async with semaphore:
@@ -52,7 +53,10 @@ async def add_reactions(message):
                 await asyncio.sleep(10)
                 await message.add_reaction(reaction)
             except Exception as e:
-                logging.exception(f"An unexpected error occurred while adding reaction: {e}")
+                logging.exception(
+                    f"An unexpected error occurred while adding reaction: {e}"
+                )
+
 
 async def process_messages():
     while True:
@@ -60,10 +64,12 @@ async def process_messages():
         await add_reactions(message)
         message_queue.task_done()
 
+
 @client.event
 async def on_message(message):
     if message.channel.id in allowed_ids:
         await message_queue.put(message)
+
 
 @client.event
 async def on_ready():
@@ -75,9 +81,10 @@ async def on_ready():
     except Exception as e:
         logging.exception(f"An error occurred while running the bot: {e}")
 
+
 try:
     if not user_token:
-        raise ValueError('No user token provided')
+        raise ValueError("No user token provided")
     loop = asyncio.get_event_loop()
     loop.run_until_complete(client.start(user_token))
 except ValueError as ve:

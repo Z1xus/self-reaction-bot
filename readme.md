@@ -3,11 +3,25 @@
 A Discord Python Selfbot to put reactions on messages.  
 Designed specifically to annoy all your friends.
 
+> [!WARNING]  
+> This may not work with the latest discord.py-self.  
+> In that case you should install a development version by cloning the discord.py-self repository and running `python -m pip install -U .`
+
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1131691836306632777/2.png?width=719&height=310">
-  <source media="(prefers-color-scheme: light)" srcset="https://media.discordapp.net/attachments/1118618417650483285/1132781143314411640/4.png?width=719&height=310">
-  <img alt="Demonstration">
+  <source srcset="https://raw.githubusercontent.com/Z1xus/self-reaction-bot/main/preview.webp">
+  <img alt="preview">
 </picture>
+
+<p align="center">
+    <a href="https://github.com/psf/black" alt="Code style: black">
+        <img src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+    <a href="https://www.codefactor.io/repository/github/z1xus/self-reaction-bot/">
+        <img src="https://www.codefactor.io/repository/github/z1xus/self-reaction-bot/badge" alt="CodeFactor" /></a>
+    <a href="https://github.com/Z1xus/self-reaction-bot/issues?q=is%3Aissue+is%3Aopen+" alt="GitHub issues">
+        <img src="https://img.shields.io/github/issues/z1xus/self-reaction-bot"></a>
+    <a href="https://github.com/Z1xus/self-reaction-bot/pulls?q=is%3Apr+is%3Aopen+" alt="GitHub pull requests">
+        <img src="https://img.shields.io/github/issues-pr/z1xus/self-reaction-bot"></a>
+</p>
 
 ### Features:
 + Proxy support
