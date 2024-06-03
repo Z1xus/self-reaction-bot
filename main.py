@@ -6,6 +6,11 @@ import os
 from dotenv import load_dotenv
 from asyncio import Semaphore, Queue
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)s] %(message)s",
+)
+
 if os.path.exists(".env"):
     load_dotenv()
 else:
@@ -25,7 +30,7 @@ semaphore = Semaphore(5)
 
 if use_proxy:
     client = discord.Client(chunk_guild_at_startup=False, proxy=proxy)
-    print(f"Using proxy: {proxy}")
+    logging.info(f"Using proxy: {proxy}")
 else:
     client = discord.Client(chunk_guild_at_startup=False)
 
@@ -74,7 +79,7 @@ async def on_message(message):
 @client.event
 async def on_ready():
     try:
-        print(f"Logged in as {client.user}")
+        logging.info(f"Logged in as {client.user}")
         asyncio.create_task(process_messages())
     except discord.LoginFailure:
         logging.warning("Login failed. Make sure you're using a valid user token.")
@@ -82,16 +87,28 @@ async def on_ready():
         logging.exception(f"An error occurred while running the bot: {e}")
 
 
-try:
-    if not user_token:
-        raise ValueError("No user token provided")
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(client.start(user_token))
-except ValueError as ve:
-    logging.error(ve)
-except discord.LoginFailure:
-    logging.error("Login failed. Make sure you're using a valid user token.")
-except KeyboardInterrupt:
-    print("\nCtrl+C received, exiting...")
-except Exception as e:
-    logging.exception(f"An error occurred while running the bot: {e}")
+async def main():
+    try:
+        if not user_token:
+            raise ValueError("No user token provided")
+
+        logging.info(f"Trying to login with the provided token, stay tuned...")
+        await client.start(user_token)
+
+    except ValueError as ve:
+        logging.error(ve)
+    except discord.LoginFailure:
+        logging.error("Login failed. Make sure you're using a valid user token.")
+    except Exception as e:
+        logging.exception(f"An error occurred while running the bot: {e}")
+    finally:
+        await client.close()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nCtrl+C received, exiting...")
+    except Exception as e:
+        logging.exception("An unexpected error occurred during execution: %s", e)
