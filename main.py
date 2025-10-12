@@ -1,106 +1,157 @@
-import discord
-import random
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
-from dotenv import load_dotenv
-from asyncio import Semaphore, Queue
+import random
+from asyncio import Queue, Semaphore
+from typing import TYPE_CHECKING
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s] %(message)s",
+import colorlog
+import discord
+from dotenv import load_dotenv
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(
+    colorlog.ColoredFormatter(
+        "%(log_color)s[%(levelname)s]%(reset)s %(message)s",
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_white",
+        },
+    )
 )
 
-if os.path.exists(".env"):
-    load_dotenv()
-else:
-    logging.error("No .env file found.")
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 
-# since v1.0.3 configuration was moved to .env
+if not os.path.exists(".env"):
+    logging.error("No .env file found. Copy .env.example to .env and configure it.")
+    raise SystemExit(1)
 
-use_proxy = os.getenv("USE_PROXY") == "True"
-proxy = os.getenv("PROXY")
-allowed_ids = list(map(int, os.getenv("ALLOWED_IDS").split(",")))
-reactions = os.getenv("REACTIONS").split(",")
-min_delay = int(os.getenv("MIN_DELAY"))
-max_delay = int(os.getenv("MAX_DELAY"))
-user_token = os.getenv("USER_TOKEN")
+load_dotenv()
+
+
+def get_env_var(key: str, required: bool = True) -> str | None:
+    value = os.getenv(key)
+    if required and not value:
+        logging.error(f"Missing required environment variable: {key}")
+        raise SystemExit(1)
+    return value
+
+
+def parse_bool(value: str | None) -> bool:
+    return value == "True"
+
+
+def parse_int_list(value: str | None) -> list[int]:
+    if not value:
+        return []
+    return [int(x.strip()) for x in value.split(",") if x.strip()]
+
+
+def parse_string_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
+use_proxy = parse_bool(get_env_var("USE_PROXY", required=False))
+proxy = get_env_var("PROXY", required=False) if use_proxy else None
+allowed_ids = parse_int_list(get_env_var("ALLOWED_IDS"))
+reactions = parse_string_list(get_env_var("REACTIONS"))
+min_delay = int(get_env_var("MIN_DELAY") or "1")
+max_delay = int(get_env_var("MAX_DELAY") or "5")
+user_token = get_env_var("USER_TOKEN")
+
+if not allowed_ids:
+    logging.error("No ALLOWED_IDS configured. Please add at least one channel ID.")
+    raise SystemExit(1)
+
+if not reactions:
+    logging.error("No REACTIONS configured. Please add at least one reaction.")
+    raise SystemExit(1)
+
+if min_delay < 0 or max_delay < min_delay:
+    logging.error(f"Invalid delay configuration: MIN_DELAY={min_delay}, MAX_DELAY={max_delay}")
+    raise SystemExit(1)
 
 semaphore = Semaphore(5)
+message_queue: Queue[discord.Message] = Queue()
 
-if use_proxy:
-    client = discord.Client(chunk_guild_at_startup=False, proxy=proxy)
+client = discord.Client(
+    chunk_guilds_at_startup=False,
+    proxy=proxy if use_proxy else None,
+)
+
+if use_proxy and proxy:
     logging.info(f"Using proxy: {proxy}")
-else:
-    client = discord.Client(chunk_guild_at_startup=False)
-
-message_queue = Queue()
 
 
-async def add_reactions(message):
+async def add_reactions(message: discord.Message, reaction_list: Sequence[str]) -> None:
     async with semaphore:
         message_deleted = False
-        for reaction in reactions:
+        for reaction in reaction_list:
             if message_deleted:
                 break
             try:
                 await message.add_reaction(reaction)
-                delay = random.randint(min_delay, max_delay)
+                delay = random.uniform(min_delay, max_delay)
                 await asyncio.sleep(delay)
-            except discord.errors.NotFound:
-                logging.error("Message not found. Skipping reactions.")
+            except discord.NotFound:
+                logging.warning("Message not found, skipping remaining reactions")
                 message_deleted = True
-            except discord.errors.Forbidden:
-                logging.error("Permisssions error. Skipping reactions.")
+            except discord.Forbidden:
+                logging.warning("Missing permissions, skipping remaining reactions")
                 message_deleted = True
-            except discord.errors.HTTPException:
-                logging.warning("Rate limit or network error. Retrying after delay.")
-                await asyncio.sleep(10)
-                await message.add_reaction(reaction)
-            except Exception as e:
-                logging.exception(
-                    f"An unexpected error occurred while adding reaction: {e}"
-                )
+            except discord.HTTPException as e:
+                if e.status == 429:  # rate limited
+                    logging.warning(f"Rate limited, waiting {e.retry_after or 10}s before retry")
+                    await asyncio.sleep(e.retry_after or 10)
+                    try:
+                        await message.add_reaction(reaction)
+                    except discord.HTTPException:
+                        logging.error(f"Failed to add reaction after retry: {reaction}")
+                else:
+                    logging.error(f"HTTP error while adding reaction: {e}")
+            except Exception:
+                logging.exception("Unexpected error while adding reaction")
 
 
-async def process_messages():
+async def process_messages() -> None:
     while True:
         message = await message_queue.get()
-        await add_reactions(message)
+        await add_reactions(message, reactions)
         message_queue.task_done()
 
 
 @client.event
-async def on_message(message):
+async def on_message(message: discord.Message) -> None:
     if message.channel.id in allowed_ids:
         await message_queue.put(message)
 
 
 @client.event
-async def on_ready():
+async def on_ready() -> None:
+    logging.info(f"Logged in as {client.user}")
+    asyncio.create_task(process_messages())
+
+
+async def main() -> None:
     try:
-        logging.info(f"Logged in as {client.user}")
-        asyncio.create_task(process_messages())
-    except discord.LoginFailure:
-        logging.warning("Login failed. Make sure you're using a valid user token.")
-    except Exception as e:
-        logging.exception(f"An error occurred while running the bot: {e}")
-
-
-async def main():
-    try:
-        if not user_token:
-            raise ValueError("No user token provided")
-
-        logging.info(f"Trying to login with the provided token, stay tuned...")
+        logging.info("Attempting to login with provided token...")
         await client.start(user_token)
-
-    except ValueError as ve:
-        logging.error(ve)
     except discord.LoginFailure:
         logging.error("Login failed. Make sure you're using a valid user token.")
-    except Exception as e:
-        logging.exception(f"An error occurred while running the bot: {e}")
+        raise SystemExit(1)
+    except Exception:
+        logging.exception("An error occurred while running the bot")
+        raise
     finally:
         await client.close()
 
@@ -109,6 +160,9 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nCtrl+C received, exiting...")
-    except Exception as e:
-        logging.exception("An unexpected error occurred during execution: %s", e)
+        logging.info("Received interrupt signal, shutting down...")
+    except SystemExit:
+        raise
+    except Exception:
+        logging.exception("Unexpected error during execution")
+        raise SystemExit(1)

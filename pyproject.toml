@@ -1,0 +1,39 @@
+[project]
+name = "self-reaction-bot"
+version = "2.0.0"
+description = "A Discord Python Selfbot to put reactions on messages"
+readme = "readme.md"
+requires-python = ">=3.11"
+dependencies = [
+    "discord.py-self>=2.0.1",
+    "python-dotenv>=1.1.1",
+    "colorlog>=6.9.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "ASYNC", # flake8-async
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+]
